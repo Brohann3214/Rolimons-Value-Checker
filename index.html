@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Roblox Value Checker</title>
+
+<style>
+body {
+    font-family: Arial;
+    background: #111;
+    color: white;
+}
+
+#controls {
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-bottom:10px;
+}
+
+#controls input {
+    padding:5px;
+    border-radius:5px;
+    border:none;
+}
+
+#loading {
+    text-align:center;
+    padding:40px;
+    font-size:20px;
+}
+
+#grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 20px;
+}
+
+.tile {
+    background: #222;
+    padding: 8px;
+    border-radius: 8px;
+    text-align: center;
+    cursor:pointer;
+    transition: transform .15s ease, box-shadow .15s ease;
+    border: 1px solid #333;
+}
+
+
+.tile:hover {
+    transform: scale(1.07);
+    z-index:5;
+}
+
+.tile img {
+    width: 120px;
+    height: 120px;
+}
+
+.small {
+    font-size: 11px;
+    opacity: .8;
+}
+
+.percent {
+    font-weight:bold;
+}
+
+</style>
+</head>
+
+<body>
+
+<h2>Rolimons RAP vs Value</h2>
+
+<div id="controls">
+    <input id="search" placeholder="Search name">
+    <input id="minPercent" type="number" placeholder="Min %">
+    <input id="maxPercent" type="number" placeholder="Max %">
+    <input id="minValue" type="number" placeholder="Min Value">
+    <input id="maxValue" type="number" placeholder="Max Value">
+</div>
+
+<div id="loading">Loading items...</div>
+<div id="grid"></div>
+
+<script>
+
+const itemIds = [
+    162066057,2470750640,2569005011,9254254,76233968067050,
+    7893468574,136803077,151786902,128217885,19027209,
+    928908332,1213472762,15054210,9255011,435115571,
+    10159600649,1082932,1048037,114706745345742,241542424,
+    16477149823,564449640,362081769,327318670,583722710,
+    583721561,1563352,583722932,10159610478,1081239,
+    1428424821,398674411,6551281,1081300,113598419875472,
+    238983270,1032641,13416321,383607653,162066176
+];
+
+let allItems = [];
+
+function getColor(p) {
+    if (p < -20) return "#ff4444";
+    if (p < -10) return "#ff9900";
+    if (p < -5) return "#ffee00";
+    if (p < 0) return "#44ff44";
+    if (p < 10) return "#4488ff";
+    return "#b044ff";
+}
+
+async function main() {
+
+    const loading = document.getElementById("loading");
+
+    const rolimons = await fetch("https://corsproxy.io/?https://www.rolimons.com/itemapi/itemdetails")
+        .then(r => r.json());
+
+    for (const id of itemIds) {
+
+        const rItem = rolimons.items[id];
+        if (!rItem) continue;
+
+        const value = rItem[4];
+        const rap = rItem[2];
+        const lowest = rItem[3];
+        const percent = ((rap - value) / value * 100);
+
+        const assetInfo = await fetch(
+            `https://corsproxy.io/?https://economy.roblox.com/v2/assets/${id}/details`
+        ).then(r => r.json());
+
+        const thumb = await fetch(
+            `https://corsproxy.io/?https://thumbnails.roblox.com/v1/assets?assetIds=${id}&size=420x420&format=Png`
+        ).then(r => r.json());
+
+        allItems.push({
+            id,
+            name: assetInfo.Name,
+            value,
+            rap,
+            lowest,
+            percent,
+            thumb: thumb.data[0].imageUrl
+        });
+    }
+
+    allItems.sort((a,b)=>b.percent-a.percent);
+
+    loading.style.display="none";
+    applyFilters();
+}
+
+function applyFilters() {
+
+    const search = document.getElementById("search").value.toLowerCase();
+    const minP = parseFloat(minPercent.value)||-999;
+    const maxP = parseFloat(maxPercent.value)||999;
+    const minV = parseFloat(minValue.value)||0;
+    const maxV = parseFloat(maxValue.value)||Infinity;
+
+    const filtered = allItems.filter(i=>
+        i.name.toLowerCase().includes(search) &&
+        i.percent >= minP &&
+        i.percent <= maxP &&
+        i.value >= minV &&
+        i.value <= maxV
+    );
+
+    render(filtered);
+}
+
+function render(items) {
+    const grid = document.getElementById("grid");
+    grid.innerHTML="";
+
+    for (const i of items) {
+
+        const color = getColor(i.percent);
+
+        const div = document.createElement("div");
+        div.className = "tile";
+        div.style.boxShadow = `0 0 12px ${color}`;
+        div.style.border = `1px solid ${color}`;
+
+
+        div.onclick = ()=>window.open(`https://www.roblox.com/catalog/${i.id}`,"_blank");
+
+        div.innerHTML = `
+            <div class="percent" style="color:${color}">
+                ${i.percent.toFixed(1)}%
+            </div>
+            <img src="${i.thumb}">
+            <b>${i.name}</b><br>
+            <span class="small">Value: ${i.value}</span><br>
+            <span class="small">RAP: ${i.rap}</span><br>
+            <span class="small">Price: ${i.lowest}</span>
+        `;
+
+        grid.appendChild(div);
+    }
+}
+
+["search","minPercent","maxPercent","minValue","maxValue"].forEach(id=>{
+    document.getElementById(id).addEventListener("input",applyFilters);
+});
+
+main();
+
+</script>
+
+</body>
+</html>
