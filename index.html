@@ -112,7 +112,7 @@ async function main() {
 
     const loading = document.getElementById("loading");
 
-    const rolimons = await fetch("https://corsproxy.io/?https://www.rolimons.com/itemapi/itemdetails")
+    const rolimons = await fetch("https://www.rolimons.com/itemapi/itemdetails")
         .then(r => r.json());
 
     for (const id of itemIds) {
@@ -126,11 +126,11 @@ async function main() {
         const percent = ((rap - value) / value * 100);
 
         const assetInfo = await fetch(
-            `https://corsproxy.io/?https://economy.roblox.com/v2/assets/${id}/details`
+            `https://economy.roblox.com/v2/assets/${id}/details`
         ).then(r => r.json());
 
         const thumb = await fetch(
-            `https://corsproxy.io/?https://thumbnails.roblox.com/v1/assets?assetIds=${id}&size=420x420&format=Png`
+            `https://thumbnails.roblox.com/v1/assets?assetIds=${id}&size=420x420&format=Png`
         ).then(r => r.json());
 
         allItems.push({
@@ -210,3 +210,4 @@ main();
 
 </body>
 </html>
+
